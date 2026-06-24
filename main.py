@@ -61,21 +61,25 @@ def main() -> None:
         if proxy_ok:
             actual_proxy = proxy.get_proxy_url()
 
-    # 创建自定义 HTTPX 请求（跳过 TLS 验证，兼容 Clash MITM）
-    httpx_kwargs = {}
-    if actual_proxy:
-        httpx_kwargs = {"verify": False}
+    # 创建 HTTPX 请求
+    # 普通请求
     request = HTTPXRequest(
         proxy=actual_proxy or None,
-        http_version="1.1",
-        connect_timeout=10,
-        read_timeout=30,
+        connect_timeout=30,
+        read_timeout=60,
         write_timeout=30,
-        httpx_kwargs=httpx_kwargs,
+    )
+    # getUpdates 长轮询请求（需要更长的超时）
+    get_updates_request = HTTPXRequest(
+        proxy=actual_proxy or None,
+        connect_timeout=30,
+        read_timeout=60,
+        write_timeout=30,
     )
 
     builder = Application.builder().token(BOT_TOKEN).post_init(post_init)
     builder = builder.request(request)
+    builder = builder.get_updates_request(get_updates_request)
     if actual_proxy:
         logger.info(f"使用代理: {actual_proxy}")
     else:
