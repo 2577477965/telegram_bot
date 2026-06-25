@@ -7,10 +7,11 @@ Telegram Bot 主入口
 RSS 频道消息抓取 + AI 总结 + 定时推送。
 """
 from datetime import time
+from zoneinfo import ZoneInfo
 
 import httpx
 from telegram import Update
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, Defaults
 from telegram.request import HTTPXRequest
 
 from config import (
@@ -18,6 +19,7 @@ from config import (
     DEEPSEEK_API_KEY,
     SUMMARY_CHAT_ID,
     SUMMARY_TIME,
+    SUMMARY_TIMEZONE,
     DB_PATH,
     PROXY_URL,
 )
@@ -77,9 +79,13 @@ def main() -> None:
         write_timeout=30,
     )
 
+    # 设置默认时区为 Asia/Shanghai，确保 run_daily 等定时任务按北京时间执行
+    defaults = Defaults(tzinfo=ZoneInfo(SUMMARY_TIMEZONE))
+
     builder = Application.builder().token(BOT_TOKEN).post_init(post_init)
     builder = builder.request(request)
     builder = builder.get_updates_request(get_updates_request)
+    builder = builder.defaults(defaults)
     if actual_proxy:
         logger.info(f"使用代理: {actual_proxy}")
     else:
